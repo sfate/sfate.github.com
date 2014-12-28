@@ -1,39 +1,76 @@
-(function() {
-  var musicID = 'https://soundcloud.com/devolverdigital/sets/hotline-miami-official';
-  var artID = 'http://dataerase.tumblr.com/post/84866886989/sorry-i-got-bored-of-anime-girls-dataerase-will';
+(function(window, document) {
+  var Audio = function(options) {
+    this.options = options
 
-  var loadSC = function() {
-    var widgetSC,
-        tapAction      = ('ontouchstart' in window) ? 'touchstart':'mousedown',
-        soundToggleEl  = document.getElementById('toggle-sound'),
-        widgetIframeEl = document.getElementById('sc-widget');
+    this.initialize().initEvents()
+  }
 
-    widgetIframeEl.src = 'https://w.soundcloud.com/player/?url=' + musicID;
-    widgetSC = SC.Widget(widgetIframeEl);
+  Audio.prototype.initialize = function() {
+    this.audio && this.audio.stop() && (this.audio.currentTime = 0)
+    this.audio = document.createElement('audio')
+    this.setNext()
 
-    widgetSC.bind(SC.Widget.Events.READY, function() {
-      var soundToggle = function() {
-        var newState = !!~String(soundToggleEl.getAttribute('class')).indexOf('muted') ? '':'muted';
-        soundToggleEl.setAttribute('class', newState);
-        widgetSC.toggle();
-      };
+    this.pauseEl = document.getElementById('toggle_sound')
 
-      var getRandomInt = function(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-      };
+    return this
+  }
 
-      widgetSC.getSounds(function(sounds) {
-        widgetSC.skip(getRandomInt(0, sounds.length - 1));
-      });
+  Audio.prototype.play = function() {
+    if (this.isPaused()) {
+      this.audio.play()
+      this.pauseEl.setAttribute('class', '')
+    }
 
-      widgetSC.bind(SC.Widget.Events.FINISH, function() {
-        widgetSC.load(musicID, {});
-      });
+    return this
+  }
 
-      soundToggle();
-      soundToggleEl.addEventListener(tapAction, soundToggle);
-    });
-  };
+  Audio.prototype.stop = function() {
+    if (!this.isPaused()) {
+      this.audio.pause()
+      this.audio.currentTime = 0
+      this.pauseEl.setAttribute('class', 'muted')
+    }
 
-  window.onload = loadSC;
-})();
+    return this
+  }
+
+  Audio.prototype.isPaused = function() {
+    return !this.audio.currentTime || this.audio.paused
+  }
+
+  Audio.prototype.initEvents = function() {
+    this.audio.addEventListener('ended', function() {
+      this.stop().setNext().play()
+    }.bind(this))
+
+    this.pauseEl.addEventListener('ontouchstart' in window ? 'touchstart':'mousedown', function() {
+      this.isPaused() ? this.play():this.stop()
+    }.bind(this))
+
+    return this
+  }
+
+  Audio.prototype.setNext = function() {
+    this.audio.src = this.options.source + this.getRandomSourceID()
+
+    return this
+  }
+
+  Audio.prototype.getCurrendSourceID = function() {
+    return this.audio.src && this.audio.src.match(/&id=(|\d+)$/)[1]
+  }
+
+  Audio.prototype.getRandomSourceID = function() {
+    var index = ~~(window.Math.random() * (this.options.sourceIDs.length - 1))
+    return this.options.sourceIDs[index] === this.getCurrendSourceID() ? this.getRandomSourceID() : this.options.sourceIDs[index]
+  }
+
+  window.onload = function() {
+    var player = new Audio({
+      source    : 'http://popplers5.bandcamp.com/download/track?enc=mp3-128&stream=1&ts=1419776082.0&id=',
+      sourceIDs : ['2399518563', '1931306333', '421356602', '735867900']
+    })
+
+    player['ontouchstart' in window ? 'stop':'play']()
+  }
+})(window, window.document)
