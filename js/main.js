@@ -65,12 +65,46 @@
     return this.options.sourceIDs[index] === this.getCurrendSourceID() ? this.getRandomSourceID() : this.options.sourceIDs[index]
   }
 
+  var Profile = function(options) {
+    this.options = options
+    this.initialize()
+  }
+
+  Profile.prototype.initialize = function() {
+    fetch('https://api.github.com/users/' + this.options.user)
+      .then(response => response.json())
+      .then(profile => {
+        document.title = profile.name;
+        document.querySelector('.header span').innerHTML = profile.name;
+        document.querySelector('#content #placeholder').classList.add('hidden');
+
+        var contentTable = document.querySelector('#content table');
+        bioLines = profile.bio.split("\r\n")
+        bioLines.forEach((el, i) => {
+          var tr = document.createElement('tr')
+          tr.classList.add('centered');
+          tr.innerHTML = el;
+          contentTable.appendChild(tr);
+
+          if (i != bioLines.length -1) {
+            var sep = document.createElement('tr');
+            sep.classList.add('centered');
+            sep.innerHTML = '<img src="./images/skull.png">'
+            contentTable.appendChild(sep);
+          }
+        })
+      });
+  }
+
   window.onload = function() {
     var player = new Audio({
       source    : 'http://popplers5.bandcamp.com/download/track?enc=mp3-128&stream=1&ts=1419776082.0&id=',
       sourceIDs : ['2399518563', '1931306333', '421356602', '735867900']
     })
+    player.stop()
 
-    player['ontouchstart' in window ? 'stop':'play']()
+    var profile = new Profile({
+      user: 'sfate'
+    })
   }
 })(window, window.document)
